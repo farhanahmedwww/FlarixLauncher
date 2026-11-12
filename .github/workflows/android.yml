@@ -119,3 +119,4 @@ jobs:
           releaseFiles: out/app-gplay.aab
           track: internal
           inAppUpdatePriority: 5
+          # FLARIX Launcher build trigger
