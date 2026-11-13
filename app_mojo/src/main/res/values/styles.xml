@@ -52,12 +52,16 @@
     </style>
 
     <style name="LauncherMenuButton" parent="Widget.AppCompat.Button">
-        <item name="android:background">?android:attr/selectableItemBackground</item>
-    </style>
+    <item name="android:background">#171717</item>
+    <item name="android:textColor">#FFFFFF</item>
+    <item name="android:textAllCaps">false</item>
+    <item name="android:minHeight">48dp</item>
+</style>
 
     <style name="LauncherMenuButton.Universal" parent="LauncherMenuButton">
-        <item name="android:layout_height">@dimen/_66sdp</item>
-    </style>
+    <item name="android:layout_height">@dimen/_66sdp</item>
+    <item name="android:layout_marginHorizontal">8dp</item>
+</style>
 
     <style name="ThickDivider">
         <item name="android:layout_width">match_parent</item>
