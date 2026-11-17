@@ -1,0 +1,67 @@
+name: Build FlarixLauncher APK
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      java_version:
+        description: "JDK version (try 21 if the build complains about Java)"
+        default: "17"
+      gradle_task:
+        description: "Gradle task"
+        default: "assembleDebug"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java_version || '17' }}
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platforms, build-tools, NDK and CMake
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;android-34" "platforms;android-35" \
+            "build-tools;34.0.0" "ndk;25.2.9519653" "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> "$GITHUB_ENV"
+
+      - name: Integrate Flarix UI and bridge
+        run: |
+          if [ -f integrate.py ]; then python3 integrate.py
+          elif [ -f flarix-integration/integrate.py ]; then python3 flarix-integration/integrate.py
+          else echo "::warning::integrate.py not found - building the unmodified engine"; fi
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: |
+          if [ -f ./gradlew ]; then chmod +x ./gradlew; GR=./gradlew; else GR=gradle; fi
+          $GR ${{ inputs.gradle_task || 'assembleDebug' }} --stacktrace --no-daemon 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Show errors on failure
+        if: failure()
+        run: grep -nE "error:|FAILED|What went wrong|Caused by|Could not" -A3 build.log | tail -n 80 || true
+
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlarixLauncher-debug-apk
+          path: "**/build/outputs/apk/**/*.apk"
+          if-no-
